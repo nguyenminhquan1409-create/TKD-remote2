@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TKD REMOTE - RED LEFT BLUE RIGHT</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #121212; color: #fff; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; display: none; }
+        button { border: none; border-radius: 12px; color: white; font-weight: bold; transition: 0.1s; }
+        button:active { transform: scale(0.92); opacity: 0.5; }
+        .red-btn { background: #d9534f; }
+        .blue-btn { background: #0056b3; }
+        .btn-small { height: 50px; font-size: 1rem; opacity: 0.7; }
+        .btn-large { height: 95px; font-size: 1.8rem; }
+        .locked { opacity: 0.1 !important; pointer-events: none; }
+        #status-bar { background: #000; padding: 10px; font-size: 1.2rem; display: flex; justify-content: space-around; border-bottom: 2px solid #333; }
+    </style>
+</head>
+<body>
+    <div id="setup" style="padding: 50px 20px;">
+        <h2>CHỌN TRỌNG TÀI</h2>
+        <button style="background:#444; padding:20px; width:80%; margin:10px;" onclick="startRef('R1')">TRỌNG TÀI 1</button>
+        <button style="background:#444; padding:20px; width:80%; margin:10px;" onclick="startRef('R2')">TRỌNG TÀI 2</button>
+        <button style="background:#444; padding:20px; width:80%; margin:10px;" onclick="startRef('R3')">TRỌNG TÀI 3</button>
+    </div>
+
+    <div id="status-bar" style="display:none">
+        <span id="rid-display"></span> | <span id="timer-state">DỪNG GIỜ</span>
+    </div>
+
+    <div id="main-ui" class="grid">
+        <button class="red-btn btn-small score-btn" onclick="sendHit('r1')">R +1</button>
+        <button class="blue-btn btn-small score-btn" onclick="sendHit('b1')">B +1</button>
+
+        <button class="red-btn btn-large score-btn" onclick="sendHit('r2')">R +2</button>
+        <button class="blue-btn btn-large score-btn" onclick="sendHit('b2')">B +2</button>
+
+        <button class="red-btn btn-large score-btn" onclick="sendHit('r3')">R +3</button>
+        <button class="blue-btn btn-large score-btn" onclick="sendHit('b3')">B +3</button>
+
+        <button class="red-btn btn-large score-btn" onclick="sendHit('r4')">R +4</button>
+        <button class="blue-btn btn-large score-btn" onclick="sendHit('b4')">B +4</button>
+
+        <button class="red-btn btn-large score-btn" onclick="sendHit('r6')">R +6</button>
+        <button class="blue-btn btn-large score-btn" onclick="sendHit('b6')">B +6</button>
+        
+        <button style="grid-column: span 2; background:#333; height: 50px;" onclick="location.reload()">ĐỔI VAI TRÒ</button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyA1NF3O5RuIRWKTQ05mn9Gph3_GSpiRlHM",
+  authDomain: "bangdiem-386b2.firebaseapp.com",
+  databaseURL: "https://bangdiem-386b2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "bangdiem-386b2",
+  storageBucket: "bangdiem-386b2.firebasestorage.app",
+  messagingSenderId: "108159643737",
+  appId: "1:108159643737:web:7cbc7d1035ba6c9db98148",
+  measurementId: "G-SC4YV3YGVS"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let myRefId = "", isRunning = false;
+
+        db.ref('match/run').on('value', (snap) => {
+            isRunning = snap.val();
+            const btns = document.querySelectorAll('.score-btn');
+            const state = document.getElementById('timer-state');
+            btns.forEach(b => isRunning ? b.classList.remove('locked') : b.classList.add('locked'));
+            state.innerText = isRunning ? "ĐANG ĐẤU" : "DỪNG GIỜ";
+            state.style.color = isRunning ? "#28a745" : "#ff4444";
+        });
+
+        function startRef(id) {
+            myRefId = id; document.getElementById('setup').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'grid';
+            document.getElementById('status-bar').style.display = 'flex';
+            document.getElementById('rid-display').innerText = id;
+        }
+
+        function sendHit(type) {
+            if (!isRunning) return;
+            db.ref('hits/' + myRefId).set({ type: type, time: Date.now() });
+            if(navigator.vibrate) navigator.vibrate(50);
+        }
+    </script>
+</body>
+</html>
