@@ -2,13 +2,13 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TKD REMOTE - RED LEFT BLUE RIGHT</title>
+    <title>TKD REMOTE - PRO SECURITY</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body { margin: 0; font-family: sans-serif; background: #121212; color: #fff; text-align: center; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; display: none; }
-        button { border: none; border-radius: 12px; color: white; font-weight: bold; transition: 0.1s; }
+        button { border: none; border-radius: 12px; color: white; font-weight: bold; transition: 0.1s; outline: none; }
         button:active { transform: scale(0.92); opacity: 0.5; }
         .red-btn { background: #d9534f; }
         .blue-btn { background: #0056b3; }
@@ -17,11 +17,10 @@
         .locked { opacity: 0.1 !important; pointer-events: none; }
         #status-bar { background: #000; padding: 10px; font-size: 1.2rem; display: flex; justify-content: space-around; border-bottom: 2px solid #333; }
         
-        /* STYLE CHO NÚT ĐÃ CÓ NGƯỜI CHỌN */
         .ref-taken { 
-            background: #d9534f !important; /* Đổi sang màu đỏ */
+            background: #d9534f !important; 
             opacity: 0.5;
-            pointer-events: none; /* Khóa nút */
+            pointer-events: none; 
             position: relative;
         }
         .ref-taken::after {
@@ -64,20 +63,20 @@
 
     <script>
         const firebaseConfig = {
-           apiKey: "AIzaSyA1NF3O5RuIRWKTQ05mn9Gph3_GSpiRlHM",
-  authDomain: "bangdiem-386b2.firebaseapp.com",
-  databaseURL: "https://bangdiem-386b2-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "bangdiem-386b2",
-  storageBucket: "bangdiem-386b2.firebasestorage.app",
-  messagingSenderId: "108159643737",
-  appId: "1:108159643737:web:7cbc7d1035ba6c9db98148",
-  measurementId: "G-SC4YV3YGVS"
+            apiKey: "AIzaSyDNt_hUr6yFJepLhl_7T72UA4x1XRr6siQ",
+            authDomain: "bangdiem2-36e35.firebaseapp.com",
+            databaseURL: "https://bangdiem2-36e35-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bangdiem2-36e35",
+            storageBucket: "bangdiem2-36e35.firebasestorage.app",
+            messagingSenderId: "353096502641",
+            appId: "1:353096502641:web:bfe5608452627b12307ad0",
+            measurementId: "G-FVDT7J72SF"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let myRefId = "", isRunning = false;
+        let myRefId = "", isRunning = false, sessionPassword = "";
 
-        // 1. LẮNG NGHE TRẠNG THÁI TRẬN ĐẤU
+        // Theo dõi trạng thái trận đấu
         db.ref('match/run').on('value', (snap) => {
             isRunning = snap.val();
             const btns = document.querySelectorAll('.score-btn');
@@ -87,56 +86,67 @@
             state.style.color = isRunning ? "#28a745" : "#ff4444";
         });
 
-        // 2. LẮNG NGHE XEM TRỌNG TÀI NÀO ĐÃ ĐƯỢC CHỌN (ĐỂ HIỆN MÀU ĐỎ)
+        // Theo dõi xem những trọng tài nào đã được chọn
         db.ref('referee_status').on('value', (snap) => {
             const status = snap.val() || {};
             const refIds = ['R1', 'R2', 'R3'];
-            
             refIds.forEach(id => {
                 const btn = document.getElementById('btn-' + id);
-                if (btn) {
-                    if (status[id]) {
-                        btn.classList.add('ref-taken');
-                    } else {
-                        btn.classList.remove('ref-taken');
-                    }
+                if (btn && id !== myRefId) { // Không làm mờ nút của chính mình
+                    if (status[id]) btn.classList.add('ref-taken');
+                    else btn.classList.remove('ref-taken');
                 }
             });
         });
 
-        // 3. HÀM CHỌN VAI TRÒ TRỌNG TÀI
         function startRef(id) {
-            // Sử dụng transaction để đảm bảo không có 2 người chọn cùng lúc
-            db.ref('referee_status/' + id).transaction((currentData) => {
-                if (currentData === null) {
-                    return true; // Nếu chưa có ai chọn thì cho phép chọn
-                } else {
-                    return; // Nếu đã có dữ liệu thì hủy bỏ (không committed)
+            db.ref('referee_passwords/' + id).once('value').then((snap) => {
+                const correctPw = snap.val() || ""; 
+                const userPw = prompt("NHẬP MẬT KHẨU CHO " + id + ":");
+                
+                if (userPw !== correctPw) {
+                    alert("SAI MẬT KHẨU! Vui lòng liên hệ thư ký.");
+                    return;
                 }
-            }, (error, committed, snapshot) => {
-                if (committed) {
-                    // CHỌN THÀNH CÔNG
-                    myRefId = id;
-                    
-                    // Tự động giải phóng vị trí này khi bị mất mạng hoặc tắt trình duyệt
-                    db.ref('referee_status/' + id).onDisconnect().remove();
 
-                    // Chuyển giao diện
-                    document.getElementById('setup').style.display = 'none';
-                    document.getElementById('main-ui').style.display = 'grid';
-                    document.getElementById('status-bar').style.display = 'flex';
-                    document.getElementById('rid-display').innerText = id;
-                } else {
-                    // CHỌN THẤT BẠI
-                    alert("Trọng tài này đã có người chọn trước bạn 1 giây!");
-                }
+                db.ref('referee_status/' + id).transaction((currentData) => {
+                    if (currentData === null) return true;
+                    else return;
+                }, (error, committed, snapshot) => {
+                    if (committed) {
+                        myRefId = id;
+                        sessionPassword = userPw; // Lưu mật khẩu đã nhập vào phiên làm việc
+                        
+                        db.ref('referee_status/' + id).onDisconnect().remove();
+                        document.getElementById('setup').style.display = 'none';
+                        document.getElementById('main-ui').style.display = 'grid';
+                        document.getElementById('status-bar').style.display = 'flex';
+                        document.getElementById('rid-display').innerText = id;
+
+                        // TÍNH NĂNG MỚI: Theo dõi mật khẩu thời gian thực
+                        // Nếu mật khẩu trên bảng điều khiển thay đổi khác với sessionPassword -> Văng ra ngoài
+                        db.ref('referee_passwords/' + id).on('value', (pwSnap) => {
+                            const latestPw = pwSnap.val();
+                            if (myRefId === id && latestPw !== sessionPassword) {
+                                alert("MẬT KHẨU ĐÃ THAY ĐỔI HOẶC BỊ HUỶ! Bạn sẽ bị đăng xuất.");
+                                location.reload(); // Tự động load lại trang để quay về màn hình setup
+                            }
+                        });
+
+                    } else {
+                        alert("Trọng tài này đã có người chọn trước bạn!");
+                    }
+                });
             });
         }
 
-        // 4. GỬI ĐIỂM
         function sendHit(type) {
             if (!isRunning) return;
-            db.ref('hits/' + myRefId).set({ type: type, time: Date.now() });
+            db.ref('hits').push({ 
+                refId: myRefId, 
+                type: type, 
+                time: firebase.database.ServerValue.TIMESTAMP 
+            });
             if(navigator.vibrate) navigator.vibrate(50);
         }
     </script>
